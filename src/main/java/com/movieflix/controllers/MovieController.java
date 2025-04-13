@@ -27,7 +27,7 @@ public class MovieController {
         this.movieService = movieService;
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+//    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/add-movie")
     public ResponseEntity<MovieDto> addMovieHandler(@RequestPart MultipartFile file,
                                                     @RequestPart String movieDto) throws IOException, EmptyFileException {
