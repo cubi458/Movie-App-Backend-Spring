@@ -35,7 +35,33 @@ public class FileController {
     @GetMapping(value = "/{fileName}")
     public void serveFileHandler(@PathVariable String fileName, HttpServletResponse response) throws IOException {
         InputStream resourceFile = fileService.getResourceFile(path, fileName);
-        response.setContentType(MediaType.IMAGE_PNG_VALUE);
+
+        // Kiểm tra định dạng file (video hay hình ảnh)
+        String fileExtension = getFileExtension(fileName);
+
+        // Kiểm tra định dạng video
+        if (fileExtension.equalsIgnoreCase("mp4") || fileExtension.equalsIgnoreCase("mkv") || fileExtension.equalsIgnoreCase("avi")) {
+            // Định dạng video
+            response.setContentType("video/mp4");  // Hoặc "video/x-matroska" cho MKV
+        } else if (fileExtension.equalsIgnoreCase("jpg") || fileExtension.equalsIgnoreCase("png") || fileExtension.equalsIgnoreCase("jpeg")) {
+            // Định dạng hình ảnh
+            response.setContentType(MediaType.IMAGE_PNG_VALUE);
+        } else {
+            // Nếu không phải định dạng video hay hình ảnh, trả về mã lỗi
+            response.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
+            return;
+        }
+
+        // Truyền file tới response
         StreamUtils.copy(resourceFile, response.getOutputStream());
+    }
+
+    // Hàm để lấy phần mở rộng của file
+    private String getFileExtension(String fileName) {
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex == -1) {
+            return "";
+        }
+        return fileName.substring(lastDotIndex + 1);
     }
 }
