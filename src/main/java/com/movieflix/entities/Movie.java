@@ -10,7 +10,6 @@ import java.util.Set;
 
 @Entity
 @NoArgsConstructor
-@AllArgsConstructor
 @Getter
 public class Movie {
 
@@ -40,4 +39,36 @@ public class Movie {
     @Column(nullable = false)
     @NotBlank(message = "Please provide movie's poster!")
     private String poster;
+
+    @Column(nullable = true)
+    private String trailerLink; // Link trailer cho phim
+
+    @Column(nullable = true) // Đổi kiểu thành Boolean để có thể nhận giá trị null
+    private Boolean video = false; // Đảm bảo giá trị mặc định là false
+
+    public Movie(Integer movieId, String title, String director, String studio, Set<String> movieCast, Integer releaseYear, String poster, String trailerLink, Boolean video) {
+        this.movieId = movieId;
+        this.title = title;
+        this.director = director;
+        this.studio = studio;
+        this.movieCast = movieCast;
+        this.releaseYear = releaseYear;
+        this.poster = poster;
+        this.trailerLink = trailerLink;
+        this.video = video;
+    }
+
+    // Getter và Setter cho video
+    public Boolean getVideo() {
+        return video;
+    }
+
+    public void setVideo(Boolean video) {
+        this.video = video;
+    }
+
+    public void setTrailerLink(String trailerLink) {
+        this.trailerLink = trailerLink;
+    }
 }
+

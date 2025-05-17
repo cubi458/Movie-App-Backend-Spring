@@ -2,6 +2,7 @@ package com.movieflix.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.movieflix.dto.EpisodeDto;
 import com.movieflix.dto.MovieDto;
 import com.movieflix.dto.MoviePageResponse;
 import com.movieflix.exceptions.EmptyFileException;
@@ -9,7 +10,6 @@ import com.movieflix.service.MovieService;
 import com.movieflix.utils.AppConstants;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,11 +27,9 @@ public class MovieController {
         this.movieService = movieService;
     }
 
-//    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/add-movie")
     public ResponseEntity<MovieDto> addMovieHandler(@RequestPart MultipartFile file,
                                                     @RequestPart String movieDto) throws IOException, EmptyFileException {
-
         if (file.isEmpty()) {
             throw new EmptyFileException("File is empty! Please send another file!");
         }
@@ -79,6 +77,34 @@ public class MovieController {
             @RequestParam(defaultValue = AppConstants.SORT_DIR, required = false) String dir
     ) {
         return ResponseEntity.ok(movieService.getAllMoviesWithPaginationAndSorting(pageNumber, pageSize, sortBy, dir));
+    }
+
+    // Thêm endpoint để thêm trailer cho phim
+    @PostMapping("/add-trailer/{movieId}")
+    public ResponseEntity<MovieDto> addTrailerToMovie(@PathVariable Integer movieId, @RequestParam String trailerLink) {
+        return ResponseEntity.ok(movieService.addTrailer(movieId, trailerLink));
+    }
+
+    // Endpoint để thêm tập phim
+    @PostMapping("/add-episode/{movieId}")
+    public ResponseEntity<EpisodeDto> addEpisodeToMovie(@PathVariable Integer movieId, @RequestBody EpisodeDto episodeDto) {
+        return ResponseEntity.ok(movieService.addEpisode(movieId, episodeDto));
+    }
+
+    // Endpoint để upload video cho phim
+    @PostMapping("/add-video/{movieId}")
+    public ResponseEntity<MovieDto> addVideoToMovie(@PathVariable Integer movieId, @RequestParam MultipartFile videoFile) throws IOException {
+        // Gọi phương thức addVideo từ MovieService để lưu video
+        String videoUrl = movieService.addVideo(movieId, videoFile);
+
+        // Lấy thông tin movie sau khi video được thêm vào
+        MovieDto movieDto = movieService.getMovie(movieId);
+
+        // Cập nhật trailerLink với video URL
+        movieDto.setTrailerLink(videoUrl);  // Trả về URL video
+
+        // Trả về MovieDto đã cập nhật
+        return ResponseEntity.ok(movieDto);
     }
 
     private MovieDto convertToMovieDto(String movieDtoObj) throws JsonProcessingException {
