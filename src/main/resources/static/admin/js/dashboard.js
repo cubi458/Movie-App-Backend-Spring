@@ -240,6 +240,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 color: #007bff;
             }
 
+            .btn-action.btn-warning {
+                background-color: rgba(255, 193, 7, 0.2);
+                color: #ffc107;
+            }
+
             /* Styling for movie title */
             .movie-title {
                 font-weight: 500;
@@ -580,6 +585,69 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 </div>
             </div>
+
+            <!-- Edit Movie Modal -->
+            <div class="modal fade" id="editMovieModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Movie</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="editMovieForm">
+                                <input type="hidden" id="editMovieId">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="editMovieTitle" class="form-label">Title</label>
+                                        <input type="text" class="form-control" id="editMovieTitle" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="editMovieDirector" class="form-label">Director</label>
+                                        <input type="text" class="form-control" id="editMovieDirector">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="editMovieStudio" class="form-label">Studio</label>
+                                        <input type="text" class="form-control" id="editMovieStudio">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="editMovieYear" class="form-label">Release Year</label>
+                                        <input type="number" class="form-control" id="editMovieYear" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="editMoviePoster" class="form-label">New Poster Image (optional)</label>
+                                        <input type="file" class="form-control" id="editMoviePoster" accept="image/*">
+                                        <div id="editPosterPreview" class="mt-2" style="max-width: 200px;">
+                                            <img src="" alt="Current Poster" class="img-fluid rounded">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="editMovieVideo" class="form-label">New Video File (optional)</label>
+                                        <input type="file" class="form-control" id="editMovieVideo" accept="video/*">
+                                        <small class="text-muted">Leave empty to keep current video</small>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="editMovieTrailer" class="form-label">Trailer Link</label>
+                                        <input type="url" class="form-control" id="editMovieTrailer" placeholder="https://example.com/trailer.mp4">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
 
         // Add event listeners and load data
@@ -631,6 +699,26 @@ function setupEventListeners() {
         if (file) {
             const reader = new FileReader();
             const preview = document.getElementById('posterPreview');
+            const previewImg = preview.querySelector('img');
+            
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                preview.style.display = 'block';
+            }
+            
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Edit movie form submission
+    document.getElementById('editMovieForm').addEventListener('submit', handleEditMovieSubmit);
+    
+    // Preview for edit poster
+    document.getElementById('editMoviePoster').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            const preview = document.getElementById('editPosterPreview');
             const previewImg = preview.querySelector('img');
             
             reader.onload = function(e) {
@@ -704,9 +792,14 @@ async function loadMovies() {
                     }
                 </td>
                 <td>
-                    <button class="btn btn-action btn-danger" onclick="deleteMovie(${movie.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-action btn-warning" onclick="editMovie(${JSON.stringify(movie).replace(/"/g, '&quot;')})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-action btn-danger" onclick="deleteMovie(${movie.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </td>
             `;
             tableBody.appendChild(row);
@@ -1002,4 +1095,89 @@ function previewPoster(posterUrl, title) {
     document.getElementById('posterPreviewImage').src = posterUrl;
     document.querySelector('#posterPreviewModal .modal-title').textContent = `Poster: ${title}`;
     modal.show();
+}
+
+// Add edit movie function
+function editMovie(movie) {
+    // Populate edit form with current movie data
+    document.getElementById('editMovieId').value = movie.id;
+    document.getElementById('editMovieTitle').value = movie.title;
+    document.getElementById('editMovieDirector').value = movie.director || '';
+    document.getElementById('editMovieStudio').value = movie.studio || '';
+    document.getElementById('editMovieYear').value = movie.releaseYear;
+    document.getElementById('editMovieTrailer').value = movie.trailerLink || '';
+    
+    // Show current poster
+    const posterPreview = document.getElementById('editPosterPreview');
+    const posterImg = posterPreview.querySelector('img');
+    if (movie.posterUrl) {
+        posterImg.src = movie.posterUrl;
+        posterPreview.style.display = 'block';
+    } else {
+        posterPreview.style.display = 'none';
+    }
+    
+    // Show edit modal
+    const editModal = new bootstrap.Modal(document.getElementById('editMovieModal'));
+    editModal.show();
+}
+
+// Handle edit movie submission
+async function handleEditMovieSubmit(e) {
+    e.preventDefault();
+    const token = localStorage.getItem('accessToken');
+    
+    try {
+        const movieId = document.getElementById('editMovieId').value;
+        const formData = new FormData();
+        const posterFile = document.getElementById('editMoviePoster').files[0];
+        const videoFile = document.getElementById('editMovieVideo').files[0];
+        const trailerLink = document.getElementById('editMovieTrailer').value;
+
+        const movieData = {
+            id: movieId,
+            title: document.getElementById('editMovieTitle').value,
+            director: document.getElementById('editMovieDirector').value || 'N/A',
+            studio: document.getElementById('editMovieStudio').value || 'N/A',
+            releaseYear: parseInt(document.getElementById('editMovieYear').value),
+            trailerLink: trailerLink || null,
+            video: videoFile ? true : null // null means no change to video status
+        };
+
+        if (posterFile) {
+            formData.append('file', posterFile);
+        }
+        if (videoFile) {
+            formData.append('video', videoFile);
+        }
+        formData.append('movieDtoStr', JSON.stringify(movieData)); // Changed from movieDto to movieDtoStr
+
+        const response = await fetch(`/api/v1/movie/update/${movieId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update movie');
+        }
+
+        // Close modal and refresh movie list
+        const editModal = bootstrap.Modal.getInstance(document.getElementById('editMovieModal'));
+        editModal.hide();
+        showAlert('Movie updated successfully!');
+        await loadMovies();
+        
+    } catch (error) {
+        console.error('Error updating movie:', error);
+        if (error.message === 'Authentication failed') {
+            localStorage.clear();
+            window.location.href = '/admin/login.html';
+        } else {
+            showAlert(error.message || 'Failed to update movie', 'danger');
+        }
+    }
 } 

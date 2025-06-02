@@ -186,28 +186,99 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public MovieDto updateMovie(Integer movieId, MovieDto movieDto, MultipartFile file) throws IOException {
+    public MovieDto updateMovie(Integer movieId, MovieDto movieDto, MultipartFile file, MultipartFile videoFile) throws IOException {
         Movie mv = movieRepository.findById(movieId)
                 .orElseThrow(() -> new MovieNotFoundException("Movie not found with id = " + movieId));
 
         String fileName = mv.getPoster();
-        if (file != null) {
-            Files.deleteIfExists(Paths.get(posterPath + File.separator + fileName));
-            fileName = fileService.uploadFile(posterPath, file);
+        if (file != null && !file.isEmpty()) {
+            // Delete old poster if exists with retry mechanism
+            if (fileName != null) {
+                Path posterFilePath = Paths.get(posterPath + File.separator + fileName);
+                boolean deleted = false;
+                for (int i = 0; i < 3; i++) {
+                    try {
+                        Files.deleteIfExists(posterFilePath);
+                        deleted = true;
+                        break;
+                    } catch (IOException e) {
+                        if (i == 2) {
+                            // If this is the last attempt, log error but continue
+                            System.err.println("Could not delete poster file after 3 attempts: " + e.getMessage());
+                        }
+                        try {
+                            Thread.sleep(100); // Wait 100ms before retrying
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+                if (deleted) {
+                    fileName = fileService.uploadFile(posterPath, file);
+                } else {
+                    // Generate new unique filename if we couldn't delete the old one
+                    String originalFilename = file.getOriginalFilename();
+                    String extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
+                    fileName = System.currentTimeMillis() + extension;
+                    Path newPosterPath = Paths.get(posterPath + File.separator + fileName);
+                    Files.copy(file.getInputStream(), newPosterPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } else {
+                fileName = fileService.uploadFile(posterPath, file);
+            }
+        }
+
+        // Convert trailer link to embed format if needed
+        String trailerLink = movieDto.getTrailerLink();
+        if (trailerLink != null && !trailerLink.isEmpty()) {
+            if (trailerLink.contains("youtube.com/watch?v=")) {
+                String videoId = trailerLink.split("v=")[1];
+                int ampersandPosition = videoId.indexOf('&');
+                if (ampersandPosition != -1) {
+                    videoId = videoId.substring(0, ampersandPosition);
+                }
+                trailerLink = "https://www.youtube.com/embed/" + videoId;
+            } else if (trailerLink.contains("youtu.be/")) {
+                String videoId = trailerLink.substring(trailerLink.lastIndexOf("/") + 1);
+                trailerLink = "https://www.youtube.com/embed/" + videoId;
+            }
+        }
+
+        // Handle video file update
+        String videoUrl = mv.getVideoUrl();
+        boolean hasVideo = mv.getVideo();
+        
+        // Handle new video file upload
+        if (videoFile != null && !videoFile.isEmpty()) {
+            // Delete old video if exists
+            if (mv.getVideoUrl() != null) {
+                String oldVideoFileName = mv.getVideoUrl().substring(mv.getVideoUrl().lastIndexOf('/') + 1);
+                Files.deleteIfExists(Paths.get(videoPath + File.separator + oldVideoFileName));
+            }
+            
+            String originalFilename = videoFile.getOriginalFilename();
+            String extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
+            String videoFileName = System.currentTimeMillis() + extension;
+            
+            Path videoFilePath = Paths.get(videoPath + File.separator + videoFileName);
+            Files.copy(videoFile.getInputStream(), videoFilePath, StandardCopyOption.REPLACE_EXISTING);
+            
+            videoUrl = baseUrl + "/video/" + videoFileName;
+            hasVideo = true;
         }
 
         Movie updated = new Movie(
-                mv.getMovieId(),
-                movieDto.getTitle(),
-                "N/A",  // director
-                "N/A",  // studio
-                new HashSet<>(),  // movieCast (dùng Set rỗng nếu không có giá trị)
-                2024,  // releaseYear
-                fileName, // poster
-                movieDto.getTrailerLink(),  // trailerLink, lấy từ MovieDto (hoặc giữ nguyên nếu không có)
-                movieDto.isVideo() // video, nếu có giá trị trong MovieDto thì sử dụng, nếu không thì mặc định là false
+                movieId,                         // movieId
+                movieDto.getTitle(),             // title
+                movieDto.getDirector(),          // director
+                movieDto.getStudio(),            // studio
+                mv.getMovieCast(),              // keep existing movieCast
+                movieDto.getReleaseYear(),       // releaseYear
+                fileName,                        // poster
+                videoUrl,                        // videoUrl (updated)
+                hasVideo,                        // video flag
+                trailerLink                      // trailerLink
         );
-
 
         Movie saved = movieRepository.save(updated);
         return mapToFlutterDto(saved);
