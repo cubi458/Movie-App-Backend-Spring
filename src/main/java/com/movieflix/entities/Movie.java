@@ -52,19 +52,6 @@ public class Movie {
     @Column(nullable = true)
     private String trailerLink;  // Link YouTube trailer
 
-    public Movie(Integer movieId, String title, String director, String studio, Set<String> movieCast, Integer releaseYear, String poster, String videoUrl, Boolean video, String trailerLink) {
-        this.movieId = movieId;
-        this.title = title;
-        this.director = director;
-        this.studio = studio;
-        this.movieCast = movieCast;
-        this.releaseYear = releaseYear;
-        this.poster = poster;
-        this.videoUrl = videoUrl;
-        this.video = video;
-        this.trailerLink = trailerLink;
-    }
-
     // Getter và Setter cho video
     public Boolean getVideo() {
         return video;
