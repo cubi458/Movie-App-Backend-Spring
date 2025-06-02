@@ -15,6 +15,8 @@ import com.movieflix.entities.Movie;
 import com.movieflix.entities.Episode;
 import com.movieflix.dto.EpisodeDto;
 import com.movieflix.repositories.EpisodeRepository; // Đảm bảo import này để sử dụng repository cho Episode
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +35,13 @@ public class MovieServiceImpl implements MovieService {
     private final FileService fileService;
 
     @Value("${project.poster}")
-    private String path;
+    private String posterPath;
+
+    @Value("${project.video}")
+    private String videoPath;
+
+    @Value("${project.trailer}")
+    private String trailerPath;
 
     @Value("${base.url}")
     private String baseUrl;
@@ -51,79 +59,110 @@ public class MovieServiceImpl implements MovieService {
     }
 
     private MovieDto mapToFlutterDto(Movie movie) {
-        String posterUrl = baseUrl + "/file/" + movie.getPoster();
+        String posterUrl = null;
+        if (movie.getPoster() != null) {
+            posterUrl = baseUrl + "/file/" + movie.getPoster();
+        }
+
         return new MovieDto(
                 movie.getMovieId(),
                 movie.getTitle(),
-                movie.getTitle(),
-                "This is a placeholder overview.",
+                movie.getDirector(),
+                movie.getStudio(),
+                movie.getReleaseYear(),
                 posterUrl,
-                posterUrl,
-                "movie",
-                false,
-                "en",
-                List.of(28, 12),
-                100.0,
-                String.valueOf(movie.getReleaseYear()),
-                movie.getVideo() != null && movie.getVideo(),  // Kiểm tra video (true nếu có video)
-                8.5,
-                1234,
-                movie.getTrailerLink()  // Lấy trailerLink từ Movie
+                movie.getTrailerLink(),  // YouTube trailer link
+                movie.getVideo() != null && movie.getVideo(),
+                movie.getVideoUrl()  // URL của video file
         );
     }
 
 
-
     // Thêm phương thức xử lý upload video
+    @Override
     public String addVideo(Integer movieId, MultipartFile videoFile) throws IOException {
-        // Tìm kiếm phim theo movieId
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new RuntimeException("Movie not found with id " + movieId));
 
-        // Tạo thư mục lưu video (nếu chưa có)
-        String videoFolderPath = "D:\\Bi\\Study\\TIEU LUAN TOT NGHIEP\\Movie-Video";  // Đường dẫn mới để lưu video
-        Path videoFolder = Paths.get(videoFolderPath);
-        if (!Files.exists(videoFolder)) {
-            Files.createDirectories(videoFolder);  // Tạo thư mục nếu chưa có
-        }
-
-        // Lưu video vào thư mục cục bộ
-        String videoFileName = videoFile.getOriginalFilename();
-        Path videoPath = videoFolder.resolve(videoFileName);
+        String originalFilename = videoFile.getOriginalFilename();
+        String extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
+        String videoFileName = System.currentTimeMillis() + extension;
+        
+        // Save video file with new name
+        Path videoPath = Paths.get(this.videoPath + File.separator + videoFileName);
         Files.copy(videoFile.getInputStream(), videoPath, StandardCopyOption.REPLACE_EXISTING);
+        
+        String videoUrl = baseUrl + "/video/" + videoFileName;
+        
+        movie.setTrailerLink(videoUrl);
+        movie.setVideo(true);
+        movieRepository.save(movie);
 
-        // Cập nhật video URL vào Movie (Bạn có thể lưu một URL tương đối hoặc tuyệt đối)
-        String videoUrl = baseUrl + "/file/videos/" + videoFileName;  // Chú ý sử dụng baseUrl và thư mục videos
-        movie.setTrailerLink(videoUrl);  // Cập nhật trailerLink với đường dẫn video
-        movie.setVideo(true);  // Đảm bảo video được đánh dấu là có
-
-        // Lưu Movie với video URL
-        movieRepository.save(movie);  // Lưu Movie với trailerLink (video URL)
-
-        return videoUrl;  // Trả về đường dẫn video vừa lưu
+        return videoUrl;
     }
 
 
     @Override
-    public MovieDto addMovie(MovieDto movieDto, MultipartFile file) throws IOException {
-        if (Files.exists(Paths.get(path + File.separator + file.getOriginalFilename()))) {
-            throw new FileExistsException("File already exists! Please enter another file name!");
+    public MovieDto addMovie(MovieDto movieDto, MultipartFile file, MultipartFile videoFile) throws IOException {
+        // Xử lý poster
+        String uploadedFileName = null;
+        if (file != null && !file.isEmpty()) {
+            String originalFilename = file.getOriginalFilename();
+            String extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
+            uploadedFileName = System.currentTimeMillis() + extension;
+            
+            Path posterFilePath = Paths.get(posterPath + File.separator + uploadedFileName);
+            Files.copy(file.getInputStream(), posterFilePath, StandardCopyOption.REPLACE_EXISTING);
         }
-        String uploadedFileName = fileService.uploadFile(path, file);
+        
+        // Xử lý video và trailer riêng biệt
+        String videoUrl = null;
+        String trailerLink = null;
+        boolean hasVideo = false;
+
+        // Nếu có video file
+        if (videoFile != null && !videoFile.isEmpty()) {
+            String originalFilename = videoFile.getOriginalFilename();
+            String extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
+            String videoFileName = System.currentTimeMillis() + extension;
+            
+            Path videoFilePath = Paths.get(videoPath + File.separator + videoFileName);
+            Files.copy(videoFile.getInputStream(), videoFilePath, StandardCopyOption.REPLACE_EXISTING);
+            
+            videoUrl = baseUrl + "/video/" + videoFileName;
+            hasVideo = true;
+        }
+
+        // Xử lý trailer link (YouTube)
+        if (movieDto.getTrailerLink() != null && !movieDto.getTrailerLink().isEmpty()) {
+            String ytLink = movieDto.getTrailerLink();
+            if (ytLink.contains("youtube.com/watch?v=")) {
+                String videoId = ytLink.split("v=")[1];
+                int ampersandPosition = videoId.indexOf('&');
+                if (ampersandPosition != -1) {
+                    videoId = videoId.substring(0, ampersandPosition);
+                }
+                trailerLink = "https://www.youtube.com/embed/" + videoId;
+            } else if (ytLink.contains("youtu.be/")) {
+                String videoId = ytLink.substring(ytLink.lastIndexOf("/") + 1);
+                trailerLink = "https://www.youtube.com/embed/" + videoId;
+            } else {
+                trailerLink = ytLink; // Giữ nguyên nếu đã là embed link
+            }
+        }
 
         Movie movie = new Movie(
-                null, // movieId
+                null,
                 movieDto.getTitle(),
-                "N/A",  // director
-                "N/A",  // studio
-                new HashSet<>(),  // movieCast (dùng Set rỗng nếu không có giá trị)
-                2024,  // releaseYear
-                uploadedFileName, // poster
-                null,  // trailerLink (Có thể truyền vào nếu cần)
-                false  // video, mặc định là false nếu không có video
+                movieDto.getDirector(),
+                movieDto.getStudio(),
+                new HashSet<>(),
+                movieDto.getReleaseYear(),
+                uploadedFileName,
+                videoUrl,  // Video URL cho file video
+                hasVideo,
+                trailerLink  // Thêm trailer link riêng
         );
-
-
 
         Movie savedMovie = movieRepository.save(movie);
         return mapToFlutterDto(savedMovie);
@@ -153,8 +192,8 @@ public class MovieServiceImpl implements MovieService {
 
         String fileName = mv.getPoster();
         if (file != null) {
-            Files.deleteIfExists(Paths.get(path + File.separator + fileName));
-            fileName = fileService.uploadFile(path, file);
+            Files.deleteIfExists(Paths.get(posterPath + File.separator + fileName));
+            fileName = fileService.uploadFile(posterPath, file);
         }
 
         Movie updated = new Movie(
@@ -178,9 +217,67 @@ public class MovieServiceImpl implements MovieService {
     public String deleteMovie(Integer movieId) throws IOException {
         Movie mv = movieRepository.findById(movieId)
                 .orElseThrow(() -> new MovieNotFoundException("Movie not found with id = " + movieId));
-        Files.deleteIfExists(Paths.get(path + File.separator + mv.getPoster()));
+        
+        boolean hasFileErrors = false;
+        StringBuilder errorMessages = new StringBuilder();
+        
+        // Xóa poster
+        if (mv.getPoster() != null) {
+            Path posterFilePath = Paths.get(posterPath + File.separator + mv.getPoster());
+            try {
+                if (Files.exists(posterFilePath)) {
+                    // Thử xóa file 3 lần
+                    for (int i = 0; i < 3; i++) {
+                        try {
+                            Files.deleteIfExists(posterFilePath);
+                            break; // Nếu xóa thành công thì thoát loop
+                        } catch (IOException e) {
+                            if (i == 2) { // Nếu lần thử cuối cùng vẫn thất bại
+                                hasFileErrors = true;
+                                errorMessages.append("Could not delete poster file. ");
+                            }
+                            try {
+                                Thread.sleep(100); // Đợi 100ms trước khi thử lại
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                hasFileErrors = true;
+                errorMessages.append("Error accessing poster file. ");
+            }
+        }
+        
+        // Xóa video file nếu có
+        if (mv.getVideoUrl() != null && mv.getVideo()) {
+            try {
+                String videoFileName = mv.getVideoUrl().substring(mv.getVideoUrl().lastIndexOf('/') + 1);
+                Path videoFilePath = Paths.get(videoPath + File.separator + videoFileName);
+                if (Files.exists(videoFilePath)) {
+                    try {
+                        Files.deleteIfExists(videoFilePath);
+                    } catch (IOException e) {
+                        hasFileErrors = true;
+                        errorMessages.append("Could not delete video file. ");
+                    }
+                }
+            } catch (Exception e) {
+                hasFileErrors = true;
+                errorMessages.append("Error accessing video file. ");
+            }
+        }
+        
+        // Luôn xóa record trong database, ngay cả khi có lỗi xóa file
         movieRepository.delete(mv);
-        return "Movie deleted with id = " + mv.getMovieId();
+        
+        if (hasFileErrors) {
+            return "Movie deleted from database with id = " + mv.getMovieId() + 
+                   ", but there were some file deletion errors: " + errorMessages.toString();
+        }
+        
+        return "Movie successfully deleted with id = " + mv.getMovieId();
     }
 
     @Override
@@ -204,29 +301,29 @@ public class MovieServiceImpl implements MovieService {
 
         movieRepository.save(movie);  // Lưu lại Movie với trailer link và video
 
-        return new MovieDto(
-                movie.getMovieId(),
-                movie.getTitle(),
-                movie.getTitle(),
-                "This is a placeholder overview.",
-                baseUrl + "/file/" + movie.getPoster(),
-                baseUrl + "/file/" + movie.getPoster(),
-                "movie",
-                false,
-                "en",
-                List.of(28, 12),
-                100.0,
-                String.valueOf(movie.getReleaseYear()),
-                movie.getVideo() != null && movie.getVideo(),  // Sử dụng video (true nếu có video)
-                8.5,
-                1234,
-                movie.getTrailerLink()
-        );
+        return mapToFlutterDto(movie);
     }
 
 
 
-
+    private String encodeUrl(String rawUrl) {
+        try {
+            int lastSlashIndex = rawUrl.lastIndexOf('/');
+            if (lastSlashIndex == -1) {
+                // Nếu URL không có dấu '/', encode toàn bộ
+                return URLEncoder.encode(rawUrl, StandardCharsets.UTF_8.toString())
+                        .replace("+", "%20");
+            }
+            String base = rawUrl.substring(0, lastSlashIndex + 1);
+            String fileName = rawUrl.substring(lastSlashIndex + 1);
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                    .replace("+", "%20");
+            return base + encodedFileName;
+        } catch (Exception e) {
+            // Nếu lỗi thì trả về URL gốc
+            return rawUrl;
+        }
+    }
     public EpisodeDto addEpisode(Integer movieId, EpisodeDto episodeDto) {
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new RuntimeException("Movie not found with id " + movieId));

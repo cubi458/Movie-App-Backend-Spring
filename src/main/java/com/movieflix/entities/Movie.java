@@ -5,12 +5,15 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.Set;
 
 @Entity
 @NoArgsConstructor
 @Getter
+@Setter
+@AllArgsConstructor
 public class Movie {
 
     @Id
@@ -41,12 +44,15 @@ public class Movie {
     private String poster;
 
     @Column(nullable = true)
-    private String trailerLink; // Link trailer cho phim
+    private String videoUrl;  // URL cho video file
 
     @Column(nullable = true) // Đổi kiểu thành Boolean để có thể nhận giá trị null
     private Boolean video = false; // Đảm bảo giá trị mặc định là false
 
-    public Movie(Integer movieId, String title, String director, String studio, Set<String> movieCast, Integer releaseYear, String poster, String trailerLink, Boolean video) {
+    @Column(nullable = true)
+    private String trailerLink;  // Link YouTube trailer
+
+    public Movie(Integer movieId, String title, String director, String studio, Set<String> movieCast, Integer releaseYear, String poster, String videoUrl, Boolean video, String trailerLink) {
         this.movieId = movieId;
         this.title = title;
         this.director = director;
@@ -54,8 +60,9 @@ public class Movie {
         this.movieCast = movieCast;
         this.releaseYear = releaseYear;
         this.poster = poster;
-        this.trailerLink = trailerLink;
+        this.videoUrl = videoUrl;
         this.video = video;
+        this.trailerLink = trailerLink;
     }
 
     // Getter và Setter cho video

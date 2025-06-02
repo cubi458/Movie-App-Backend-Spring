@@ -19,44 +19,70 @@ public class FileController {
 
     private final FileService fileService;
 
+    @Value("${project.poster}")
+    private String posterPath;
+
+    @Value("${project.video}")
+    private String videoPath;
+
+    @Value("${project.trailer}")
+    private String trailerPath;
+
     public FileController(FileService fileService) {
         this.fileService = fileService;
     }
 
-    @Value("${project.poster}")
-    private String path;
+    @PostMapping("/upload/poster")
+    public ResponseEntity<String> uploadPosterHandler(@RequestPart MultipartFile file) throws IOException {
+        String uploadedFileName = fileService.uploadFile(posterPath, file);
+        return ResponseEntity.ok("Poster uploaded: " + uploadedFileName);
+    }
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadFileHandler(@RequestPart MultipartFile file) throws IOException {
-        String uploadedFileName = fileService.uploadFile(path, file);
-        return ResponseEntity.ok("File uploaded : " + uploadedFileName);
+    @PostMapping("/upload/video")
+    public ResponseEntity<String> uploadVideoHandler(@RequestPart MultipartFile file) throws IOException {
+        String uploadedFileName = fileService.uploadFile(videoPath, file);
+        return ResponseEntity.ok("Video uploaded: " + uploadedFileName);
+    }
+
+    @PostMapping("/upload/trailer")
+    public ResponseEntity<String> uploadTrailerHandler(@RequestPart MultipartFile file) throws IOException {
+        String uploadedFileName = fileService.uploadFile(trailerPath, file);
+        return ResponseEntity.ok("Trailer uploaded: " + uploadedFileName);
     }
 
     @GetMapping(value = "/{fileName}")
     public void serveFileHandler(@PathVariable String fileName, HttpServletResponse response) throws IOException {
-        InputStream resourceFile = fileService.getResourceFile(path, fileName);
-
-        // Kiểm tra định dạng file (video hay hình ảnh)
         String fileExtension = getFileExtension(fileName);
+        String path;
 
-        // Kiểm tra định dạng video
-        if (fileExtension.equalsIgnoreCase("mp4") || fileExtension.equalsIgnoreCase("mkv") || fileExtension.equalsIgnoreCase("avi")) {
-            // Định dạng video
-            response.setContentType("video/mp4");  // Hoặc "video/x-matroska" cho MKV
-        } else if (fileExtension.equalsIgnoreCase("jpg") || fileExtension.equalsIgnoreCase("png") || fileExtension.equalsIgnoreCase("jpeg")) {
-            // Định dạng hình ảnh
+        // Xác định đường dẫn dựa trên định dạng file
+        if (isVideoFormat(fileExtension)) {
+            path = videoPath;
+            response.setContentType("video/mp4");
+        } else if (isImageFormat(fileExtension)) {
+            path = posterPath;
             response.setContentType(MediaType.IMAGE_PNG_VALUE);
         } else {
-            // Nếu không phải định dạng video hay hình ảnh, trả về mã lỗi
             response.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
             return;
         }
 
-        // Truyền file tới response
+        InputStream resourceFile = fileService.getResourceFile(path, fileName);
         StreamUtils.copy(resourceFile, response.getOutputStream());
     }
 
-    // Hàm để lấy phần mở rộng của file
+    private boolean isVideoFormat(String extension) {
+        return extension.equalsIgnoreCase("mp4") || 
+               extension.equalsIgnoreCase("mkv") || 
+               extension.equalsIgnoreCase("avi");
+    }
+
+    private boolean isImageFormat(String extension) {
+        return extension.equalsIgnoreCase("jpg") || 
+               extension.equalsIgnoreCase("png") || 
+               extension.equalsIgnoreCase("jpeg");
+    }
+
     private String getFileExtension(String fileName) {
         int lastDotIndex = fileName.lastIndexOf('.');
         if (lastDotIndex == -1) {

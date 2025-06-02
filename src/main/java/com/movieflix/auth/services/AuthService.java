@@ -29,7 +29,7 @@ public class AuthService {
                 .email(registerRequest.getEmail())
                 .username(registerRequest.getUsername())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .role(UserRole.USER)
+                .role(UserRole.ROLE_USER)
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -41,6 +41,37 @@ public class AuthService {
                 .refreshToken(refreshToken.getRefreshToken())
                 .name(savedUser.getName())
                 .email(savedUser.getEmail())
+                .role(savedUser.getRole().name())
+                .build();
+    }
+
+    public AuthResponse registerAdmin(RegisterRequest registerRequest) {
+        // Check if user already exists
+        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already registered");
+        }
+        if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already taken");
+        }
+
+        var user = User.builder()
+                .name(registerRequest.getName())
+                .email(registerRequest.getEmail())
+                .username(registerRequest.getUsername())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .role(UserRole.ROLE_ADMIN)
+                .build();
+
+        User savedUser = userRepository.save(user);
+        var accessToken = jwtService.generateToken(savedUser);
+        var refreshToken = refreshTokenService.createRefreshToken(savedUser.getEmail());
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken.getRefreshToken())
+                .name(savedUser.getName())
+                .email(savedUser.getEmail())
+                .role(savedUser.getRole().name())
                 .build();
     }
 
@@ -52,7 +83,9 @@ public class AuthService {
                         )
         );
 
-        var user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow(() -> new UsernameNotFoundException("User not found!"));
+        var user = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found!"));
+        
         var accessToken = jwtService.generateToken(user);
         var refreshToken = refreshTokenService.createRefreshToken(loginRequest.getEmail());
 
@@ -61,6 +94,7 @@ public class AuthService {
                 .refreshToken(refreshToken.getRefreshToken())
                 .name(user.getName())
                 .email(user.getEmail())
+                .role(user.getRole().name())
                 .build();
     }
 }
