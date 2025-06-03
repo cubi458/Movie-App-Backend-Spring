@@ -26,10 +26,13 @@ spring:
           auth: true
           starttls:
             enable: true
+  main:
+    allow-bean-definition-overriding: true
 
 project:
-  poster: ./posters
-
+  poster: ./media/posters
+  video: ./media/videos
+  trailer: ./media/trailers
 
 base:
   url: "http://localhost:8080"

@@ -10,13 +10,13 @@ import java.util.List;
 
 public interface MovieService {
 
-    MovieDto addMovie(MovieDto movieDto, MultipartFile file) throws IOException;
+    MovieDto addMovie(MovieDto movieDto, MultipartFile file, MultipartFile videoFile) throws IOException;
 
     MovieDto getMovie(Integer movieId);
 
     List<MovieDto> getAllMovies();
 
-    MovieDto updateMovie(Integer movieId, MovieDto movieDto, MultipartFile file) throws IOException;
+    MovieDto updateMovie(Integer movieId, MovieDto movieDto, MultipartFile file, MultipartFile videoFile) throws IOException;
 
     String deleteMovie(Integer movieId) throws IOException;
 

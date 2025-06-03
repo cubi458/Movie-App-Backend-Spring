@@ -5,6 +5,8 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +15,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class JwtService {
 
@@ -31,12 +35,14 @@ public class JwtService {
 
     // extract information from JWT
     private Claims extractAllClaims(String token) {
-        return Jwts
+        Claims claims = Jwts
                 .parserBuilder()
                 .setSigningKey(getSignInKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+        log.info("Token claims: {}", claims);
+        return claims;
     }
 
     // decode and get the key
@@ -56,8 +62,13 @@ public class JwtService {
             Map<String, Object> extraClaims,
             UserDetails userDetails
     ) {
-        extraClaims = new HashMap<>(extraClaims);
-        extraClaims.put("role", userDetails.getAuthorities());
+        String authorities = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(","));
+        log.info("Generating token for user {} with authorities: {}", userDetails.getUsername(), authorities);
+        
+        extraClaims.put("authorities", authorities);
+        
         return Jwts
                 .builder()
                 .setClaims(extraClaims)
@@ -70,13 +81,39 @@ public class JwtService {
 
     // if token is valid by checking if token is expired for current user
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        try {
+            final String username = extractUsername(token);
+            log.info("Validating token for username: {} against userDetails username: {}", username, userDetails.getUsername());
+            
+            Claims claims = extractAllClaims(token);
+            log.info("Token claims: {}", claims);
+            log.info("Token expiration: {}", claims.getExpiration());
+            log.info("Current time: {}", new Date());
+            
+            boolean isValid = (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+            log.info("Token validation result - Valid: {}, Username match: {}, Not expired: {}", 
+                    isValid, 
+                    username.equals(userDetails.getUsername()), 
+                    !isTokenExpired(token));
+            return isValid;
+        } catch (Exception e) {
+            log.error("Error validating token", e);
+            return false;
+        }
     }
 
     // if token is expired
     private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        try {
+            Date expiration = extractExpiration(token);
+            boolean isExpired = expiration.before(new Date());
+            log.info("Token expiration check - Expiration: {}, Current time: {}, Is expired: {}", 
+                    expiration, new Date(), isExpired);
+            return isExpired;
+        } catch (Exception e) {
+            log.error("Error checking token expiration", e);
+            return true;
+        }
     }
 
     // get expiration date from token

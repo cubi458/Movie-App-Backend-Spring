@@ -28,13 +28,15 @@ public class MovieController {
     }
 
     @PostMapping("/add-movie")
-    public ResponseEntity<MovieDto> addMovieHandler(@RequestPart MultipartFile file,
-                                                    @RequestPart String movieDto) throws IOException, EmptyFileException {
+    public ResponseEntity<MovieDto> addMovieHandler(
+            @RequestPart(value = "file") MultipartFile file,
+            @RequestPart(value = "video", required = false) MultipartFile videoFile,
+            @RequestPart(value = "movieDto") String movieDtoStr) throws IOException, EmptyFileException {
         if (file.isEmpty()) {
             throw new EmptyFileException("File is empty! Please send another file!");
         }
-        MovieDto dto = convertToMovieDto(movieDto);
-        return new ResponseEntity<>(movieService.addMovie(dto, file), HttpStatus.CREATED);
+        MovieDto movieDto = convertToMovieDto(movieDtoStr);
+        return new ResponseEntity<>(movieService.addMovie(movieDto, file, videoFile), HttpStatus.CREATED);
     }
 
     @GetMapping("/{movieId}")
@@ -48,12 +50,13 @@ public class MovieController {
     }
 
     @PutMapping("/update/{movieId}")
-    public ResponseEntity<MovieDto> updateMovieHandler(@PathVariable Integer movieId,
-                                                       @RequestPart(required = false) MultipartFile file,
-                                                       @RequestPart String movieDtoObj) throws IOException {
-        if (file == null || file.isEmpty()) file = null;
-        MovieDto movieDto = convertToMovieDto(movieDtoObj);
-        return ResponseEntity.ok(movieService.updateMovie(movieId, movieDto, file));
+    public ResponseEntity<MovieDto> updateMovieHandler(
+            @PathVariable Integer movieId,
+            @RequestPart(required = false) MultipartFile file,
+            @RequestPart(value = "video", required = false) MultipartFile videoFile,
+            @RequestPart String movieDtoStr) throws IOException {
+        MovieDto movieDto = convertToMovieDto(movieDtoStr);
+        return ResponseEntity.ok(movieService.updateMovie(movieId, movieDto, file, videoFile));
     }
 
     @DeleteMapping("/delete/{movieId}")
@@ -64,8 +67,7 @@ public class MovieController {
     @GetMapping("/allMoviesPage")
     public ResponseEntity<MoviePageResponse> getMoviesWithPagination(
             @RequestParam(defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
-            @RequestParam(defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize
-    ) {
+            @RequestParam(defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize) {
         return ResponseEntity.ok(movieService.getAllMoviesWithPagination(pageNumber, pageSize));
     }
 
@@ -107,8 +109,8 @@ public class MovieController {
         return ResponseEntity.ok(movieDto);
     }
 
-    private MovieDto convertToMovieDto(String movieDtoObj) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(movieDtoObj, MovieDto.class);
+    private MovieDto convertToMovieDto(String movieDtoStr) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(movieDtoStr, MovieDto.class);
     }
 }
