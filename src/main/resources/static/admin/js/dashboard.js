@@ -445,20 +445,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             <nav class="sidebar">
                 <div class="sidebar-sticky">
                     <div class="text-center mb-4">
-                        <h3 class="text-white mb-0">Movie Admin</h3>
-                        <small class="text-muted">Management Dashboard</small>
+                        <h3 class="text-white mb-0" data-i18n="dashboard.title">Movie Management</h3>
+                        <small class="text-muted" data-i18n="dashboard.subtitle">Management Dashboard</small>
                     </div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link active" href="#" id="moviesLink">
                                 <i class="fas fa-film"></i>
-                                Movies
+                                <span data-i18n="dashboard.movies">Movie List</span>
                             </a>
                         </li>
                         <li class="nav-item mt-auto">
                             <a class="nav-link" href="#" id="logoutBtn">
                                 <i class="fas fa-sign-out-alt"></i>
-                                Logout
+                                <span data-i18n="common.logout">Logout</span>
                             </a>
                         </li>
                     </ul>
@@ -468,10 +468,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             <main class="main-content">
                 <div class="container-fluid">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2 class="mb-0 fade-in">Movie Management</h2>
                         <div class="d-flex">
-                            <button class="btn btn-outline-light ms-2" onclick="loadMovies()">
-                                <i class="fas fa-sync-alt me-2"></i>Refresh
+                            <h2 class="mb-0 me-3 fade-in" data-i18n="dashboard.title">Movie Management</h2>
+                            <button class="btn btn-outline-light" onclick="loadMovies()">
+                                <i class="fas fa-sync-alt me-2"></i>
+                                <span data-i18n="common.refresh">Refresh</span>
+                            </button>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-outline-light me-2 lang-btn" onclick="i18n.setLanguage('en')">
+                                English
+                            </button>
+                            <button class="btn btn-outline-light lang-btn" onclick="i18n.setLanguage('vi')">
+                                Tiếng Việt
                             </button>
                         </div>
                     </div>
@@ -479,70 +488,71 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <div id="alertContainer"></div>
                     
                     <div class="movie-form fade-in">
-                        <h4 class="mb-4">Add New Movie</h4>
+                        <h4 class="mb-4" data-i18n="dashboard.addMovie">Add New Movie</h4>
                         <form id="movieForm" class="mb-4">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="movieTitle" class="form-label">Title</label>
+                                    <label for="movieTitle" class="form-label" data-i18n="movies.title">Title</label>
                                     <input type="text" class="form-control" id="movieTitle" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="movieDirector" class="form-label">Director</label>
+                                    <label for="movieDirector" class="form-label" data-i18n="movies.director">Director</label>
                                     <input type="text" class="form-control" id="movieDirector">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="movieStudio" class="form-label">Studio</label>
+                                    <label for="movieStudio" class="form-label" data-i18n="movies.studio">Studio</label>
                                     <input type="text" class="form-control" id="movieStudio">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="movieYear" class="form-label">Release Year</label>
+                                    <label for="movieYear" class="form-label" data-i18n="movies.year">Release Year</label>
                                     <input type="number" class="form-control" id="movieYear" required>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-12 mb-3">
-                                    <label for="moviePoster" class="form-label">Poster Image</label>
+                                    <label for="moviePoster" class="form-label" data-i18n="movies.poster">Poster</label>
                                     <input type="file" class="form-control" id="moviePoster" accept="image/*" required>
-                                    <div id="posterPreview" class="mt-2" style="max-width: 200px; display: none;">
-                                        <img src="" alt="Poster Preview" class="img-fluid rounded">
+                                    <div id="posterPreview" class="mt-3" style="display: none;">
+                                        <img src="" alt="Poster Preview" class="img-fluid rounded" style="max-height: 300px;">
                                     </div>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-12 mb-3">
-                                    <label for="movieVideo" class="form-label">Movie Video</label>
+                                    <label for="movieVideo" class="form-label" data-i18n="movies.video">Video</label>
                                     <input type="file" class="form-control" id="movieVideo" accept="video/*">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-12 mb-3">
-                                    <label for="movieTrailer" class="form-label">Trailer Link</label>
-                                    <input type="url" class="form-control" id="movieTrailer" placeholder="https://example.com/trailer.mp4">
+                                    <label for="movieTrailer" class="form-label" data-i18n="movies.trailer">Trailer</label>
+                                    <input type="url" class="form-control" id="movieTrailer">
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-plus me-2"></i>Add Movie
+                                <i class="fas fa-plus me-2"></i>
+                                <span data-i18n="movies.add">Add Movie</span>
                             </button>
                         </form>
                     </div>
 
                     <div class="movie-list fade-in">
-                        <h4 class="mb-4">Movie List</h4>
+                        <h4 class="mb-4" data-i18n="dashboard.movies">Movie List</h4>
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Poster</th>
-                                        <th>Title</th>
-                                        <th>Director</th>
-                                        <th>Studio</th>
-                                        <th>Release Year</th>
-                                        <th>Trailer Link</th>
-                                        <th>Video</th>
-                                        <th>Actions</th>
+                                        <th data-i18n="movies.poster">Poster</th>
+                                        <th data-i18n="movies.title">Title</th>
+                                        <th data-i18n="movies.director">Director</th>
+                                        <th data-i18n="movies.studio">Studio</th>
+                                        <th data-i18n="movies.year">Release Year</th>
+                                        <th data-i18n="movies.trailer">Trailer</th>
+                                        <th data-i18n="movies.video">Video</th>
+                                        <th data-i18n="movies.actions">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="movieTableBody">
@@ -613,7 +623,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                         <input type="text" class="form-control" id="editMovieStudio">
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="editMovieYear" class="form-label">Release Year</label>
+                                        <label for="editMovieYear" class="form-label" data-i18n="movies.year">Release Year</label>
                                         <input type="number" class="form-control" id="editMovieYear" required>
                                     </div>
                                 </div>
@@ -649,6 +659,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             </div>
         `;
+
+        // After loading dashboard content, update translations
+        if (typeof i18n !== 'undefined') {
+            i18n.updateContent();
+        }
 
         // Add event listeners and load data
         setupEventListeners();
@@ -696,36 +711,37 @@ function setupEventListeners() {
     // Add poster preview for new movie
     document.getElementById('moviePoster').addEventListener('change', function(e) {
         const file = e.target.files[0];
+        const preview = document.getElementById('posterPreview');
+        const previewImg = preview.querySelector('img');
+        
         if (file) {
             const reader = new FileReader();
-            const preview = document.getElementById('posterPreview');
-            const previewImg = preview.querySelector('img');
-            
             reader.onload = function(e) {
                 previewImg.src = e.target.result;
                 preview.style.display = 'block';
             }
-            
             reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+            previewImg.src = '';
         }
     });
 
     // Edit movie form submission
     document.getElementById('editMovieForm').addEventListener('submit', handleEditMovieSubmit);
     
-    // Preview for edit poster
+    // Add poster preview for edit form
     document.getElementById('editMoviePoster').addEventListener('change', function(e) {
         const file = e.target.files[0];
+        const preview = document.getElementById('editPosterPreview');
+        const previewImg = preview.querySelector('img');
+        
         if (file) {
             const reader = new FileReader();
-            const preview = document.getElementById('editPosterPreview');
-            const previewImg = preview.querySelector('img');
-            
             reader.onload = function(e) {
                 previewImg.src = e.target.result;
                 preview.style.display = 'block';
             }
-            
             reader.readAsDataURL(file);
         }
     });
@@ -767,9 +783,9 @@ async function loadMovies() {
                     }
                 </td>
                 <td><span class="movie-title">${movie.title}</span></td>
-                <td>${movie.director || 'N/A'}</td>
-                <td>${movie.studio || 'N/A'}</td>
-                <td>${movie.releaseYear}</td>
+                <td><span>${movie.director || 'N/A'}</span></td>
+                <td><span>${movie.studio || 'N/A'}</span></td>
+                <td><span>${movie.releaseYear}</span></td>
                 <td>
                     ${movie.trailerLink ? 
                         `<div class="d-flex align-items-center">
@@ -780,7 +796,7 @@ async function loadMovies() {
                                 <i class="fas fa-film"></i>
                             </button>
                         </div>` : 
-                        'N/A'
+                        '<span>N/A</span>'
                     }
                 </td>
                 <td>
@@ -788,7 +804,7 @@ async function loadMovies() {
                         `<button class="btn btn-action btn-primary" onclick="previewVideo('${movie.videoUrl}', '${movie.title}')">
                             <i class="fas fa-play"></i>
                         </button>` : 
-                        '<span class="badge bg-secondary">No Video</span>'
+                        '<span class="badge bg-secondary" data-i18n="movies.no_video">No Video</span>'
                     }
                 </td>
                 <td>
@@ -804,6 +820,11 @@ async function loadMovies() {
             `;
             tableBody.appendChild(row);
         });
+
+        // After adding rows, update translations again
+        if (typeof i18n !== 'undefined') {
+            i18n.updateContent();
+        }
     } catch (error) {
         console.error('Error loading movies:', error);
         if (error.message === 'Authentication failed') {

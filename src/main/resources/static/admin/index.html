@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Admin</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/dashboard.css" rel="stylesheet">
+    <style>
+        :root {
+            --netflix-red: #E50914;
+        }
+
+        img.emoji {
+            height: 1em;
+            width: 1em;
+            margin: 0 .05em 0 .1em;
+            vertical-align: -0.1em;
+        }
+        
+        .flag-icon {
+            font-size: 1.2em;
+            margin-right: 4px;
+        }
+        
+        .btn-outline-light .flag-icon {
+            display: inline-block;
+            transform: translateY(1px);
+        }
+        
+        .btn-outline-light {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .btn-outline-light:hover .flag-icon {
+            transform: translateY(1px) scale(1.1);
+        }
+
+        .lang-btn {
+            min-width: 100px;
+            font-size: 0.95rem;
+            padding: 6px 12px;
+        }
+
+        .lang-btn.active {
+            background-color: #E50914 !important;
+            border-color: #E50914 !important;
+            color: white !important;
+            font-weight: 500;
+        }
+
+        .lang-btn.active:hover {
+            background-color: #f40612 !important;
+            border-color: #f40612 !important;
+        }
+
+        .lang-btn:not(.active):hover {
+            border-color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #posterPreview, #editPosterPreview {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        #posterPreview img, #editPosterPreview img {
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #posterPreview:hover img, #editPosterPreview:hover img {
+            transform: scale(1.02);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="loading-spinner"></div>
+        <div class="mt-3" data-i18n="common.loading">Loading...</div>
+    </div>
+    
+    <div id="dashboard-content" class="dashboard-container" style="display: none;">
+        <!-- Content will be loaded dynamically by JavaScript -->
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- Twemoji -->
+    <script src="https://twemoji.maxcdn.com/v/latest/twemoji.min.js" crossorigin="anonymous"></script>
+    <!-- Language files -->
+    <script src="js/en.js"></script>
+    <script src="js/vi.js"></script>
+    <script src="js/i18n.js"></script>
+    <!-- Custom JS -->
+    <script src="js/dashboard.js"></script>
+    <script>
+        // Initialize Twemoji
+        window.onload = function() {
+            twemoji.parse(document.body, {
+                folder: 'svg',
+                ext: '.svg'
+            });
+        }
+    </script>
+</body>
+</html> 
